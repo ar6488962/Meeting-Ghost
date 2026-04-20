@@ -4,10 +4,12 @@
 
 A powerful Streamlit application that intelligently analyzes meetings, extracts key information, tracks action items, and automates follow-up communications.
 
+🚀 **[Try the Live Demo](https://meeting-ghost-1.streamlit.app/)** - Experience MeetingGhost in action!
+
 ## Features
 
 ✨ **Audio Transcription** - Upload audio files (mp3, mp4, wav) or paste transcripts directly
-🧠 **AI Meeting Analysis** - Automatic extraction using Google Gemini 1.5 Flash:
+🧠 **AI Meeting Analysis** - Automatic extraction using Groq's Llama 3.3 70B:
   - Meeting summaries
   - Decisions made
   - Action items with owners and deadlines
@@ -30,13 +32,13 @@ A powerful Streamlit application that intelligently analyzes meetings, extracts 
 The system consists of 4 specialized AI agents:
 
 ### 1. Transcriber Agent (`agents/transcriber.py`)
-- Uses OpenAI Whisper API for audio transcription
+- Uses Groq Whisper API for audio transcription
 - Accepts: mp3, mp4, wav, m4a, flac, ogg, webm formats
 - Falls back to direct text input
 - Returns: Clean transcript string
 
 ### 2. Intelligence Agent (`agents/intelligence.py`)
-- Analyzes meeting transcripts using Google Gemini 1.5 Flash
+- Analyzes meeting transcripts using Groq's Llama 3.3 70B model
 - Extracts structured meeting insights:
   - Summary (5 lines max)
   - Decisions made
@@ -57,7 +59,7 @@ The system consists of 4 specialized AI agents:
 - Persistent storage across sessions
 
 ### 4. Communicator Agent (`agents/communicator.py`)
-- Uses Google Gemini to draft follow-up emails
+- Uses Groq's Llama 3.3 70B to draft follow-up emails
 - Creates personalized emails for each person
 - Email includes:
   - Professional greeting
@@ -73,8 +75,8 @@ The system consists of 4 specialized AI agents:
 - Python 3.9+
 - Windows/Mac/Linux
 - API Keys:
-  - OpenAI API Key (for Whisper transcription)
-  - Google Gemini API Key (for intelligence and emails)
+  - Groq API Key (for Whisper transcription and analysis)
+  - Gmail App Password (optional, for sending emails)
 
 ### Installation
 
@@ -101,8 +103,9 @@ The system consists of 4 specialized AI agents:
 
 4. **Create `.env` file** in project root:
    ```
-   OPENAI_API_KEY=your_openai_api_key_here
-   GEMINI_API_KEY=your_gemini_api_key_here
+   GROQ_API_KEY=your_groq_api_key_here
+   GMAIL_ADDRESS=your_email@gmail.com (optional)
+   GMAIL_APP_PASSWORD=your_app_password (optional)
    ```
 
 ### Running the Application
@@ -112,6 +115,8 @@ streamlit run app.py
 ```
 
 The application will open in your default browser at `http://localhost:8501`
+
+Or try the **[live demo](https://meeting-ghost-1.streamlit.app/)** hosted on Streamlit Cloud!
 
 ## Usage Guide
 
@@ -162,7 +167,7 @@ MeetingGhost/
 │   ├── transcriber.py           # Audio to text (OpenAI Whisper)
 │   ├── intelligence.py          # Analysis (Google Gemini)
 │   ├── accountability.py        # Database (SQLite)
-│   └── communicator.py          # Email draft (Google Gemini)
+│   └── communicator.py          # Email draft (Groq Llama)
 └── database/
     ├── __init__.py
     └── meeting_ghost.db         # SQLite database (auto-created)
@@ -170,10 +175,10 @@ MeetingGhost/
 
 ## Dependencies
 
-- **streamlit==1.32.0** - Web UI framework
-- **openai==1.3.0** - OpenAI Whisper API
-- **google-generativeai==0.3.0** - Google Gemini API
-- **python-dotenv==1.0.0** - Environment variable management
+- **streamlit>=1.28.0** - Web UI framework
+- **groq>=1.0.0** - Groq API client (Whisper & Llama)
+- **python-dotenv>=1.0.0** - Environment variable management
+- **pydub>=0.25.0** - Audio processing (optional)
 
 ## Error Handling
 
@@ -221,18 +226,16 @@ Potential additions:
 
 ## Troubleshooting
 
-### "OPENAI_API_KEY not found"
+### "GROQ_API_KEY not found"
 - Ensure `.env` file exists in project root
-- Check API key is correctly set: `OPENAI_API_KEY=your_key`
-
-### "GEMINI_API_KEY not found"
-- Ensure `.env` file has: `GEMINI_API_KEY=your_key`
-- Generate key at https://makersuite.google.com/app/apikey
+- Check API key is correctly set: `GROQ_API_KEY=your_key`
+- Get your key at https://console.groq.com/keys
 
 ### Audio transcription fails
-- Check audio file format is supported
-- Ensure audio is clear and not corrupted
-- Try smaller audio files first
+- Check audio file format is supported (mp3, mp4, wav, m4a, ogg, webm)
+- Ensure audio file is under 25MB
+- Audio should be clear and not corrupted
+- Check that GROQ_API_KEY is valid
 
 ### Email generation is slow
 - Normal on first run (API warmup)
