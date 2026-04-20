@@ -4,14 +4,18 @@ Supports: mp3, mp4, wav, m4a, ogg, webm formats or accepts pre-transcribed text 
 Automatically splits large audio files (>25MB) into 10-minute chunks for transcription.
 """
 
-import imageio_ffmpeg
 import os
-os.environ["PATH"] += os.pathsep + os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
-
 import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
+
+# Try to set up FFmpeg if available
+try:
+    import imageio_ffmpeg
+    os.environ["PATH"] += os.pathsep + os.path.dirname(imageio_ffmpeg.get_ffmpeg_exe())
+except ImportError:
+    pass
 
 try:
     from pydub import AudioSegment
