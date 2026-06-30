@@ -82,6 +82,31 @@ Or try it live: **https://meeting-ghost-1.streamlit.app/**
 
 ---
 
+## Deployment Guide
+
+### Deploying Backend to Render
+1. Push your repository to GitHub.
+2. Sign up on [Render.com](https://render.com) and create a new **Web Service**.
+3. Connect your repository.
+4. Render will automatically detect the `render.yaml` configuration in the root directory.
+5. In your Render Dashboard, go to **Environment** and add the following missing environment variables:
+   - `GROQ_API_KEY`
+   - `GMAIL_ADDRESS`
+   - `GMAIL_APP_PASSWORD`
+   - `SECRET_KEY`
+
+### Deploying Frontend to Vercel
+1. Sign up on [Vercel](https://vercel.com) and click **Add New Project**.
+2. Connect your GitHub repository.
+3. In the project configuration:
+   - Expand **Build and Output Settings** or **Root Directory** and set the root directory to `fullstack/frontend`.
+   - Vercel will auto-detect Next.js.
+4. Under **Environment Variables**, add:
+   - `NEXT_PUBLIC_API_URL` (Set this to your live Render backend URL, e.g., `https://meetingghost-backend.onrender.com`)
+5. Click **Deploy**.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |

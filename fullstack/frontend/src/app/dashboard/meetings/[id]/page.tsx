@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { 
@@ -37,7 +37,8 @@ interface MeetingDetails {
   created_at: string;
 }
 
-export default function MeetingDetailView({ params }: { params: { id: string } }) {
+export default function MeetingDetailView({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [meeting, setMeeting] = useState<MeetingDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ export default function MeetingDetailView({ params }: { params: { id: string } }
   useEffect(() => {
     async function fetchMeetingDetails() {
       try {
-        const data = await api.get<MeetingDetails>(`/meetings/${params.id}`);
+        const data = await api.get<MeetingDetails>(`/meetings/${id}`);
         setMeeting(data);
       } catch (err: any) {
         setError(err.message || "Failed to load meeting details");
@@ -57,7 +58,7 @@ export default function MeetingDetailView({ params }: { params: { id: string } }
       }
     }
     fetchMeetingDetails();
-  }, [params.id]);
+  }, [id]);
 
   const handleCopyMarkdown = () => {
     if (!meeting) return;

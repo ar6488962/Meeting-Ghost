@@ -45,31 +45,28 @@ def extract_meeting_intelligence(transcript: str) -> dict:
     transcript = transcript.strip()
     
     # Prepare the prompt for Groq
-    prompt = f"""You are a meeting analysis assistant. Analyze the meeting transcript below and respond with a JSON object containing exactly these fields:
-
-- "summary": string, a concise 3-5 sentence summary of the meeting
-- "decisions": array of strings, each decision made during the meeting
-- "action_items": array of objects, each with keys "owner" (string), "task" (string), "deadline" (string)
-- "unresolved_issues": array of strings, each open issue or unresolved debate
-- "risks": array of strings, each risk or concern mentioned
-
-Rules:
-- Return ONLY the JSON object, nothing else
-- Use empty arrays [] for fields with no data
-- Use "Unassigned" if an action item has no clear owner
-- Do NOT use newlines inside string values; keep all string values on a single line
+    prompt = f"""Analyze this meeting transcript and extract the following information:
 
 TRANSCRIPT:
-{transcript}"""
+{transcript}
+
+Please provide a JSON response with exactly these fields:
+1. "summary": A concise 5-line maximum summary of the meeting
+2. "decisions": A list of all decisions made (each as a string)
+3. "action_items": A list of objects, each with: {{"owner": "person name", "task": "what to do", "deadline": "when"}}
+4. "unresolved_issues": A list of issues or debates that remain open
+5. "risks": A list of risks or concerns mentioned
+
+IMPORTANT: Return only valid JSON, no other text. If a field is empty, use an empty list [].
+If owner name cannot be determined, use "Unassigned"."""
 
     try:
         # Call Groq API using chat completions
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-            max_tokens=2000,
-            response_format={"type": "json_object"}
+            temperature=0.7,
+            max_tokens=2000
         )
         
         if not response.choices or not response.choices[0].message.content:
@@ -78,16 +75,12 @@ TRANSCRIPT:
         # Parse JSON response
         response_text = response.choices[0].message.content.strip()
         
-        # Sanitize: remove control characters that break JSON parsing
-        # (keeps newlines and tabs inside the outer JSON structure but strips bad chars)
-        sanitized = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', response_text)
-        
-        # Try to extract JSON object from response (in case model adds extra text)
-        json_match = re.search(r'\{.*\}', sanitized, re.DOTALL)
+        # Try to extract JSON from response (in case there's extra text)
+        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
         if json_match:
             json_str = json_match.group(0)
         else:
-            json_str = sanitized
+            json_str = response_text
         
         intelligence = json.loads(json_str)
         

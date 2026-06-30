@@ -163,9 +163,14 @@ export default function DashboardLayout({
           </div>
         </nav>
 
-        {/* User Footer */}
         <div className={styles.userFooter}>
-          <div className={styles.userAvatar}>{getInitials(user.full_name)}</div>
+          <div className={styles.userAvatar} style={{ padding: 0, overflow: 'hidden', background: 'none' }}>
+            <img 
+              src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.full_name)}&backgroundColor=6366f1,e2e8f0`} 
+              alt={user.full_name} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+            />
+          </div>
           <div className={styles.userInfo}>
             <div className={styles.userName}>{user.full_name}</div>
             <div className={styles.userEmail}>{user.email}</div>
@@ -198,8 +203,12 @@ export default function DashboardLayout({
               <Calendar size={13} color="var(--accent-primary)" />
               <span>{currentDate}</span>
             </div>
-            <div className={styles.userAvatar} style={{ width: 34, height: 34, borderRadius: 10, fontSize: "0.8rem" }}>
-              {getInitials(user.full_name)}
+            <div className={styles.userAvatar} style={{ width: 34, height: 34, borderRadius: 10, padding: 0, overflow: 'hidden', background: 'none' }}>
+              <img 
+                src={`https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(user.full_name)}&backgroundColor=6366f1,e2e8f0`} 
+                alt={user.full_name} 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
             </div>
           </div>
         </header>

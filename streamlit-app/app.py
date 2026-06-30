@@ -164,12 +164,6 @@ if "current_transcript" not in st.session_state:
     st.session_state.current_transcript = ""
 if "email_sent_tracking" not in st.session_state:
     st.session_state.email_sent_tracking = {}
-if "current_emails" not in st.session_state:
-    st.session_state.current_emails = []
-if "app_mode" not in st.session_state:
-    st.session_state.app_mode = "Process New Meeting"
-if "email_send_counter" not in st.session_state:
-    st.session_state.email_send_counter = 0
 
 
 def main():
@@ -178,11 +172,14 @@ def main():
     # Header
     st.markdown('<p class="main-title">👻 MeetingGhost</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="subtitle">Intelligent Meeting Summarization, Accountability Tracking &amp; Follow-up</p>',
+        '<p class="subtitle">Intelligent Meeting Summarization, Accountability Tracking & Follow-up</p>',
         unsafe_allow_html=True
     )
     
     # Display notification if email was just sent (persist for a few reruns)
+    if "email_send_counter" not in st.session_state:
+        st.session_state.email_send_counter = 0
+    
     if st.session_state.email_send_counter > 0:
         email_to = st.session_state.get("email_just_sent_to", "recipient")
         st.markdown(f"""
@@ -195,18 +192,13 @@ def main():
     
     st.divider()
     
-    # Sidebar for navigation — use session state so it persists across reruns
+    # Sidebar for navigation
     with st.sidebar:
         st.markdown("## 📋 Navigation")
-        mode_options = ["Process New Meeting", "Pending Action Items", "Help"]
-        current_index = mode_options.index(st.session_state.app_mode) if st.session_state.app_mode in mode_options else 0
         app_mode = st.radio(
             "Select Mode:",
-            mode_options,
-            index=current_index,
-            key="sidebar_radio"
+            ["Process New Meeting", "Pending Action Items", "Help"]
         )
-        st.session_state.app_mode = app_mode
     
     # Main content based on mode
     if app_mode == "Process New Meeting":
@@ -311,7 +303,6 @@ def analyze_meeting(transcript: str):
         # Step 4: Generate follow-up emails
         status_text.text("✉️ Generating follow-up emails...")
         emails = generate_follow_up_emails(intelligence["action_items"])
-        st.session_state.current_emails = emails  # persist across reruns
         progress_bar.progress(100)
         
         status_text.text("")

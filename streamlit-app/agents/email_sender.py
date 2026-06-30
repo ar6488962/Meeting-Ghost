@@ -30,8 +30,7 @@ def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
     try:
         # Load credentials from environment
         gmail_address = os.getenv("GMAIL_ADDRESS")
-        # Gmail App Passwords may contain spaces (e.g. 'xxxx xxxx xxxx xxxx') — strip them
-        gmail_password = (os.getenv("GMAIL_APP_PASSWORD") or "").replace(" ", "")
+        gmail_password = os.getenv("GMAIL_APP_PASSWORD")
         
         # Validate credentials
         if not gmail_address or not gmail_password:
