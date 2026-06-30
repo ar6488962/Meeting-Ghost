@@ -48,6 +48,15 @@ database/
 temp_chunks/
 *.tmp
 *.log
+pip_out.txt
+pip_err.txt
+test_out.txt
+test_err.txt
+check_imports.py
+
+# Node
+node_modules/
+.next/
 
 # OS
 .DS_Store
