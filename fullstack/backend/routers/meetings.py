@@ -135,7 +135,13 @@ def analyze_meeting(
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        err = str(e)
+        if "non-empty list" in err or "action_items" in err.lower():
+            raise HTTPException(
+                status_code=422,
+                detail="No meeting content detected. Please upload a real meeting/conversation recording, not music or silence."
+            )
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {err}")
 
 
 @router.post("/analyze-audio", response_model=schemas.MeetingOut, status_code=201)
