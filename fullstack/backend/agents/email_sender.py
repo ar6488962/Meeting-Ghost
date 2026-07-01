@@ -1,73 +1,67 @@
 """
-Email Sender Agent - Handles sending follow-up emails via Gmail SMTP.
+Email Sender Agent - Handles sending follow-up emails via Resend API.
 
-This module provides functionality to send emails using Gmail's SMTP server.
-It requires GMAIL_ADDRESS and GMAIL_APP_PASSWORD to be set in the .env file.
+Uses Resend's HTTPS API instead of SMTP so it works on all hosting platforms
+including Render's free tier which blocks outbound SMTP connections.
 """
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
+import urllib.request
+import urllib.error
+import json
 from typing import Tuple
 
 
 def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
     """
-    Send an email using Gmail SMTP server.
-    
+    Send an email using Resend API (HTTPS-based, works on Render free tier).
+
     Args:
         to_address (str): Recipient email address
         subject (str): Email subject line
         body (str): Email body content
-    
+
     Returns:
         Tuple[bool, str]: (Success status, Message)
-            - (True, "Email sent successfully") if sent
-            - (False, "Error message") if failed
     """
-    
     try:
-        # Load credentials from environment
-        gmail_address = os.getenv("GMAIL_ADDRESS")
-        # Gmail App Passwords may contain spaces (e.g. 'xxxx xxxx xxxx xxxx') — strip them
-        gmail_password = (os.getenv("GMAIL_APP_PASSWORD") or "").replace(" ", "")
-        
-        # Validate credentials
-        if not gmail_address or not gmail_password:
-            return False, "❌ Gmail credentials not configured. Please set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env"
-        
-        # Validate recipient email
-        if not to_address or not to_address.strip():
-            return False, "❌ Recipient email address cannot be empty"
-        
-        # Validate email format (basic check)
-        if "@" not in to_address or "." not in to_address.split("@")[-1]:
-            return False, "❌ Invalid email address format"
-        
-        # Create email message
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        message["From"] = gmail_address
-        message["To"] = to_address.strip()
-        
-        # Attach body as plain text
-        part = MIMEText(body, "plain")
-        message.attach(part)
-        
-        # Send email via Gmail SMTP
-        # Use port 465 for SMTP_SSL (not 587, which is for TLS)
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(gmail_address, gmail_password)
-            server.sendmail(gmail_address, to_address.strip(), message.as_string())
-        
-        return True, "✅ Email sent successfully!"
-    
-    except smtplib.SMTPAuthenticationError:
-        return False, "❌ Authentication failed. Check GMAIL_ADDRESS and GMAIL_APP_PASSWORD"
-    
-    except smtplib.SMTPException as e:
-        return False, f"❌ SMTP error occurred: {str(e)}"
-    
+        resend_api_key = os.getenv("RESEND_API_KEY")
+        from_address = os.getenv("RESEND_FROM_EMAIL", "MeetingGhost <onboarding@resend.dev>")
+
+        if not resend_api_key:
+            return False, "RESEND_API_KEY not configured. Please add it in Render environment variables."
+
+        if not to_address or "@" not in to_address:
+            return False, "Invalid recipient email address."
+
+        # Build the request payload
+        payload = json.dumps({
+            "from": from_address,
+            "to": [to_address.strip()],
+            "subject": subject,
+            "text": body,
+        }).encode("utf-8")
+
+        # Make HTTPS request to Resend API (port 443 - always open on Render)
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=15) as response:
+            resp_data = json.loads(response.read().decode())
+            if resp_data.get("id"):
+                return True, "Email sent successfully!"
+            return False, "Resend API did not return an email ID."
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else str(e)
+        return False, f"Resend API error {e.code}: {error_body}"
+
     except Exception as e:
-        return False, f"❌ Error sending email: {str(e)}"
+        return False, f"Error sending email: {str(e)}"
