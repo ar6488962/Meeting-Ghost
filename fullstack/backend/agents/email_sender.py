@@ -1,8 +1,8 @@
 """
-Email Sender Agent - Handles sending follow-up emails via Resend API.
+Email Sender Agent - Handles sending follow-up emails via Brevo API.
 
-Uses Resend's HTTPS API instead of SMTP so it works on all hosting platforms
-including Render's free tier which blocks outbound SMTP connections.
+Uses Brevo's HTTPS API (port 443) which works perfectly on Render's free tier.
+Allows sending emails to anyone using your verified sender email.
 """
 
 import os
@@ -14,7 +14,7 @@ from typing import Tuple
 
 def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
     """
-    Send an email using Resend API (HTTPS-based, works on Render free tier).
+    Send an email using Brevo API.
 
     Args:
         to_address (str): Recipient email address
@@ -25,43 +25,55 @@ def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
         Tuple[bool, str]: (Success status, Message)
     """
     try:
-        resend_api_key = os.getenv("RESEND_API_KEY")
-        from_address = os.getenv("RESEND_FROM_EMAIL", "MeetingGhost <onboarding@resend.dev>")
+        brevo_api_key = os.getenv("BREVO_API_KEY")
+        # Use GMAIL_ADDRESS or SENDER_EMAIL as the sender since that is the email verified on Brevo
+        sender_email = os.getenv("SENDER_EMAIL") or os.getenv("GMAIL_ADDRESS")
 
-        if not resend_api_key:
-            return False, "RESEND_API_KEY not configured. Please add it in Render environment variables."
+        if not brevo_api_key:
+            return False, "❌ BREVO_API_KEY not configured in Render environment variables."
+
+        if not sender_email:
+            return False, "❌ SENDER_EMAIL/GMAIL_ADDRESS not configured. We need your registered Brevo email to send."
 
         if not to_address or "@" not in to_address:
-            return False, "Invalid recipient email address."
+            return False, "❌ Invalid recipient email address."
 
-        # Build the request payload
+        # Build Brevo API payload
         payload = json.dumps({
-            "from": from_address,
-            "to": [to_address.strip()],
+            "sender": {
+                "name": "MeetingGhost AI",
+                "email": sender_email.strip()
+            },
+            "to": [
+                {
+                    "email": to_address.strip()
+                }
+            ],
             "subject": subject,
-            "text": body,
+            "textContent": body
         }).encode("utf-8")
 
-        # Make HTTPS request to Resend API (port 443 - always open on Render)
+        # Make HTTPS request to Brevo API
         req = urllib.request.Request(
-            "https://api.resend.com/emails",
+            "https://api.brevo.com/v3/smtp/email",
             data=payload,
             headers={
-                "Authorization": f"Bearer {resend_api_key}",
+                "api-key": brevo_api_key,
                 "Content-Type": "application/json",
+                "Accept": "application/json"
             },
-            method="POST",
+            method="POST"
         )
 
         with urllib.request.urlopen(req, timeout=15) as response:
             resp_data = json.loads(response.read().decode())
-            if resp_data.get("id"):
-                return True, "Email sent successfully!"
-            return False, "Resend API did not return an email ID."
+            if resp_data.get("messageId"):
+                return True, "✅ Email sent successfully!"
+            return False, "❌ Brevo API did not return a message ID."
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
-        return False, f"Resend API error {e.code}: {error_body}"
+        return False, f"❌ Brevo API error {e.code}: {error_body}"
 
     except Exception as e:
-        return False, f"Error sending email: {str(e)}"
+        return False, f"❌ Error sending email: {str(e)}"
