@@ -1,5 +1,6 @@
 """
 Database configuration — SQLAlchemy engine, session factory, and Base.
+Supports both PostgreSQL (production on Render) and SQLite (local dev).
 """
 
 import os
@@ -10,17 +11,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# SQLite database stored in backend/database/
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_DIR = os.path.join(BASE_DIR, "database")
-os.makedirs(DB_DIR, exist_ok=True)
+# Use DATABASE_URL from environment (PostgreSQL on Render) or fall back to SQLite locally
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = f"sqlite:///{os.path.join(DB_DIR, 'meetingghost.db')}"
-
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}  # Required for SQLite
-)
+if DATABASE_URL:
+    # Render provides postgres:// URLs but SQLAlchemy needs postgresql://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    engine = create_engine(DATABASE_URL)
+else:
+    # Local development: use SQLite
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DB_DIR = os.path.join(BASE_DIR, "database")
+    os.makedirs(DB_DIR, exist_ok=True)
+    SQLITE_URL = f"sqlite:///{os.path.join(DB_DIR, 'meetingghost.db')}"
+    engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
