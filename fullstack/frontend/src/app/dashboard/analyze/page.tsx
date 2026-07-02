@@ -666,6 +666,8 @@ export default function AnalyzeMeeting() {
                           <div style={{ display: "flex", gap: 10 }}>
                             <input
                               type="email"
+                              name={`recipient-email-${idx}`}
+                              autoComplete="new-email"
                               className="input"
                               placeholder="Recipient email address (e.g. james@company.com)"
                               value={emailInputs[idx] || ""}
