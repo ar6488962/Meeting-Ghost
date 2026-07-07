@@ -67,6 +67,7 @@ export default function AnalyzeMeeting() {
   const [activeTab, setActiveTab] = useState<"summary" | "decisions" | "actions" | "issues" | "emails">("summary");
 
   const [emailInputs, setEmailInputs] = useState<{ [key: number]: string }>({});
+  const [editedEmails, setEditedEmails] = useState<{ [key: number]: string }>({});
   const [sendingEmails, setSendingEmails] = useState<{ [key: number]: boolean }>({});
   const [emailSuccess, setEmailSuccess] = useState<{ [key: number]: string }>({});
   const [emailError, setEmailError] = useState<{ [key: number]: string }>({});
@@ -131,6 +132,7 @@ export default function AnalyzeMeeting() {
 
   const handleSendEmail = async (idx: number, draft: EmailDraft) => {
     const recipient = emailInputs[idx]?.trim();
+    const bodyToSend = editedEmails[idx] ?? draft.body;
     if (!recipient) {
       setEmailError((prev) => ({ ...prev, [idx]: "Recipient email address cannot be empty" }));
       return;
@@ -142,7 +144,7 @@ export default function AnalyzeMeeting() {
       await api.post("/emails/send", {
         recipient,
         subject: draft.subject,
-        body: draft.body,
+        body: bodyToSend,
         meeting_id: result?.id,
       });
       setEmailSuccess((prev) => ({ ...prev, [idx]: `Email dispatched to ${recipient}` }));
@@ -633,7 +635,7 @@ export default function AnalyzeMeeting() {
                             <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{draft.subject}</div>
                           </div>
                           <button
-                            onClick={() => handleCopy(idx, `Subject: ${draft.subject}\n\n${draft.body}`)}
+                            onClick={() => handleCopy(idx, `Subject: ${draft.subject}\n\n${editedEmails[idx] ?? draft.body}`)}
                             className="btn btn-secondary btn-sm"
                             style={{ gap: 6, flexShrink: 0 }}
                           >
@@ -643,7 +645,9 @@ export default function AnalyzeMeeting() {
                         </div>
 
                         {/* Email body */}
-                        <div
+                        <textarea
+                          value={editedEmails[idx] ?? draft.body}
+                          onChange={(e) => setEditedEmails(prev => ({ ...prev, [idx]: e.target.value }))}
                           style={{
                             padding: "16px 18px",
                             background: "rgba(0,0,0,0.25)",
@@ -654,12 +658,12 @@ export default function AnalyzeMeeting() {
                             whiteSpace: "pre-wrap",
                             border: "1px solid var(--border)",
                             lineHeight: 1.7,
+                            minHeight: 120,
                             maxHeight: 260,
-                            overflowY: "auto",
+                            resize: "vertical",
+                            width: "100%",
                           }}
-                        >
-                          {draft.body}
-                        </div>
+                        />
 
                         {/* Send section */}
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
