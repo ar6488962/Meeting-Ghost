@@ -11,23 +11,21 @@ import re
 from dotenv import load_dotenv
 from groq import Groq
 
-# Load environment variables
 load_dotenv()
-
-# Initialize Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def extract_meeting_intelligence(transcript: str) -> dict:
     """Analyze a meeting transcript and extract structured information."""
 
-    if not os.getenv("GROQ_API_KEY"):
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
         raise ValueError("GROQ_API_KEY not found in environment variables")
 
     if not isinstance(transcript, str) or not transcript.strip():
         raise ValueError("Transcript must be a non-empty string")
 
     transcript = transcript.strip()
+    client = Groq(api_key=api_key)
 
     prompt = f"""You are a meeting analysis assistant.
 Analyze the meeting transcript below and return a JSON object
@@ -53,12 +51,7 @@ TRANSCRIPT:
     try:
         response = client.chat.completions.create(
             model="openai/gpt-oss-120b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.1,
             max_tokens=2000,
             response_format={"type": "json_object"}
@@ -69,14 +62,12 @@ TRANSCRIPT:
 
         response_text = response.choices[0].message.content.strip()
 
-        # Remove invalid control characters.
         sanitized = re.sub(
             r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]',
             '',
             response_text
         )
 
-        # Extract the JSON object.
         json_match = re.search(r'\{.*\}', sanitized, re.DOTALL)
         json_str = json_match.group(0) if json_match else sanitized
 
@@ -109,11 +100,9 @@ def _validate_intelligence_response(response: dict) -> dict:
         "risks": []
     }
 
-    # Validate summary.
     if response.get("summary"):
         validated["summary"] = str(response["summary"]).strip()
 
-    # Validate decisions.
     if isinstance(response.get("decisions"), list):
         validated["decisions"] = [
             str(item).strip()
@@ -121,7 +110,6 @@ def _validate_intelligence_response(response: dict) -> dict:
             if item
         ]
 
-    # Validate action items.
     if isinstance(response.get("action_items"), list):
         for item in response["action_items"]:
             if not isinstance(item, dict):
@@ -140,7 +128,6 @@ def _validate_intelligence_response(response: dict) -> dict:
             if action_item["task"]:
                 validated["action_items"].append(action_item)
 
-    # Validate unresolved issues.
     if isinstance(response.get("unresolved_issues"), list):
         validated["unresolved_issues"] = [
             str(item).strip()
@@ -148,7 +135,6 @@ def _validate_intelligence_response(response: dict) -> dict:
             if item
         ]
 
-    # Validate risks.
     if isinstance(response.get("risks"), list):
         validated["risks"] = [
             str(item).strip()
