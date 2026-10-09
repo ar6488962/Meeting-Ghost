@@ -1,4 +1,4 @@
-```python
+
 """
 Intelligence Agent - Analyzes meeting transcripts using Groq LLM API.
 Extracts: summary, decisions, action items, unresolved issues, and risks.
@@ -7,6 +7,7 @@ Extracts: summary, decisions, action items, unresolved issues, and risks.
 import os
 import json
 import re
+
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -18,27 +19,15 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def extract_meeting_intelligence(transcript: str) -> dict:
-    """
-    Analyze a meeting transcript and extract key information.
-
-    Returns a dictionary containing:
-        - summary
-        - decisions
-        - action_items
-        - unresolved_issues
-        - risks
-    """
+    """Analyze a meeting transcript and extract structured information."""
 
     if not os.getenv("GROQ_API_KEY"):
         raise ValueError("GROQ_API_KEY not found in environment variables")
 
-    if not transcript or not isinstance(transcript, str):
+    if not isinstance(transcript, str) or not transcript.strip():
         raise ValueError("Transcript must be a non-empty string")
 
     transcript = transcript.strip()
-
-    if not transcript:
-        raise ValueError("Transcript must be a non-empty string")
 
     prompt = f"""You are a meeting analysis assistant.
 Analyze the meeting transcript below and return a JSON object
@@ -80,14 +69,14 @@ TRANSCRIPT:
 
         response_text = response.choices[0].message.content.strip()
 
-        # Remove control characters that can break JSON parsing.
+        # Remove invalid control characters.
         sanitized = re.sub(
             r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]',
             '',
             response_text
         )
 
-        # Extract the JSON object if extra text is present.
+        # Extract the JSON object.
         json_match = re.search(r'\{.*\}', sanitized, re.DOTALL)
         json_str = json_match.group(0) if json_match else sanitized
 
@@ -100,12 +89,12 @@ TRANSCRIPT:
 
     except json.JSONDecodeError as e:
         raise Exception(
-            f"Failed to parse Groq response as JSON: {str(e)}"
+            f"Failed to parse Groq response as JSON: {e}"
         ) from e
 
     except Exception as e:
         raise Exception(
-            f"Intelligence extraction failed: {str(e)}"
+            f"Intelligence extraction failed: {e}"
         ) from e
 
 
@@ -171,4 +160,3 @@ def _validate_intelligence_response(response: dict) -> dict:
 
 
 __all__ = ["extract_meeting_intelligence"]
-```
