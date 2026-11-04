@@ -10,6 +10,7 @@ import urllib.request
 import urllib.error
 import json
 import smtplib
+import time
 from email.message import EmailMessage
 from typing import Tuple
 
@@ -26,10 +27,31 @@ def _send_with_gmail(to_address: str, subject: str, body: str) -> Tuple[bool, st
     message["Subject"] = subject
     message.set_content(body)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
-        smtp.login(sender_email.strip(), app_password)
-        smtp.send_message(message)
-    return True, "Email sent successfully via Gmail."
+    errors = []
+    for port in (587, 465):
+        try:
+            if port == 587:
+                with smtplib.SMTP("smtp.gmail.com", port, timeout=15) as smtp:
+                    smtp.ehlo()
+                    smtp.starttls()
+                    smtp.ehlo()
+                    smtp.login(sender_email.strip(), app_password)
+                    smtp.send_message(message)
+            else:
+                with smtplib.SMTP_SSL("smtp.gmail.com", port, timeout=15) as smtp:
+                    smtp.login(sender_email.strip(), app_password)
+                    smtp.send_message(message)
+            return True, "Email sent successfully via Gmail."
+        except (OSError, smtplib.SMTPException) as error:
+            errors.append(f"port {port}: {error}")
+            if port == 587:
+                time.sleep(1)
+
+    return False, (
+        "Gmail could not be reached from the server. "
+        "Configure a valid Brevo API key, or enable outbound Gmail SMTP. "
+        + "; ".join(errors)
+    )
 
 
 def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
@@ -93,13 +115,13 @@ def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
         if e.code in (401, 403):
-            try:
-                return _send_with_gmail(to_address, subject, body)
-            except Exception as gmail_error:
-                return False, (
-                    f"Brevo rejected the API key ({e.code}) and Gmail fallback failed: "
-                    f"{gmail_error}"
-                )
+            success, fallback_message = _send_with_gmail(to_address, subject, body)
+            if success:
+                return True, fallback_message
+            return False, (
+                f"Brevo rejected the API key ({e.code}) and Gmail fallback failed: "
+                f"{fallback_message}"
+            )
         return False, f"❌ Brevo API error {e.code}: {error_body}"
 
     except Exception as e:
