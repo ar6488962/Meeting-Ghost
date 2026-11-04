@@ -40,6 +40,7 @@ def send_email(
             raise HTTPException(status_code=404, detail="Email draft not found")
 
     success, message = smtp_send(
+        sender_email=current_user.email,
         to_address=payload.recipient,
         subject=payload.subject,
         body=payload.body,
