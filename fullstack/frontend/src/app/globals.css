@@ -121,6 +121,15 @@ input, textarea, select {
   outline: none;
 }
 
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background: #171a2a;
+  color: #f1f5f9;
+}
+
 /* ─── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
