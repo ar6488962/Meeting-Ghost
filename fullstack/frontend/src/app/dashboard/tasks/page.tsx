@@ -143,13 +143,17 @@ export default function ActionItemsTracker() {
           }}
         >
           <option value="">All meetings</option>
-          {meetings.map((meeting) => (
+          {meetings.map((meeting, index) => (
             <option key={meeting.id} value={meeting.id}>
-              {meeting.title} — {formatFullDateTime(meeting.created_at)}
+              Meeting {index + 1} — {formatFullDateTime(meeting.created_at)}
             </option>
           ))}
         </select>
-        {selectedMeeting && <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>Showing this meeting only</span>}
+        {selectedMeeting && (
+          <div style={{ flexBasis: "100%", color: "var(--text-secondary)", fontSize: "0.8rem", lineHeight: 1.5 }}>
+            Showing: {selectedMeeting.title} — {formatFullDateTime(selectedMeeting.created_at)}
+          </div>
+        )}
       </div>
 
       <section className="grid-3">

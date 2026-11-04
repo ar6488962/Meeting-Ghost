@@ -73,6 +73,7 @@ export default function EmailHistory() {
 
   const successfulDispatches = logs.filter(l => l.status === "Sent").length;
   const failedDispatches = logs.filter(l => l.status === "Failed").length;
+  const selectedMeeting = meetings.find((meeting) => String(meeting.id) === selectedMeetingId);
 
   return (
     <div className="animate-fadeInUp" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -135,12 +136,17 @@ export default function EmailHistory() {
             aria-label="Filter email history by meeting"
           >
             <option value="">All meetings</option>
-            {meetings.map((meeting) => (
+            {meetings.map((meeting, index) => (
               <option key={meeting.id} value={meeting.id}>
-                {meeting.title} — {formatFullDateTime(meeting.created_at)}
+                Meeting {index + 1} — {formatFullDateTime(meeting.created_at)}
               </option>
             ))}
           </select>
+          {selectedMeeting && (
+            <div style={{ flexBasis: "100%", color: "var(--text-secondary)", fontSize: "0.8rem", lineHeight: 1.5 }}>
+              Showing: {selectedMeeting.title} — {formatFullDateTime(selectedMeeting.created_at)}
+            </div>
+          )}
           <div style={{ position: "relative", flex: "1 1 280px", minWidth: "280px" }}>
             <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input

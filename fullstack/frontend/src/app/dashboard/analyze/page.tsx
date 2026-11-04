@@ -90,6 +90,7 @@ export default function AnalyzeMeeting() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
   const [selectedMeetingId, setSelectedMeetingId] = useState("");
+  const selectedMeeting = meetings.find((meeting) => String(meeting.id) === selectedMeetingId);
 
   useEffect(() => {
     api.get<MeetingListItem[]>("/meetings").then(setMeetings).catch(() => {
@@ -246,12 +247,17 @@ export default function AnalyzeMeeting() {
             }}
           >
             <option value="">Select a previous meeting</option>
-            {meetings.map((meeting) => (
+            {meetings.map((meeting, index) => (
               <option key={meeting.id} value={meeting.id}>
-                {meeting.title} — {formatFullDateTime(meeting.created_at)}
+                Meeting {index + 1} — {formatFullDateTime(meeting.created_at)}
               </option>
             ))}
           </select>
+          {selectedMeeting && (
+            <div style={{ flexBasis: "100%", color: "var(--text-secondary)", fontSize: "0.8rem", lineHeight: 1.5 }}>
+              Selected: {selectedMeeting.title} — {formatFullDateTime(selectedMeeting.created_at)}
+            </div>
+          )}
         </div>
       )}
       {!result && (
