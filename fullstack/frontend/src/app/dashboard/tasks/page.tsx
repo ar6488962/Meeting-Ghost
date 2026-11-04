@@ -132,7 +132,15 @@ export default function ActionItemsTracker() {
           value={selectedMeetingId}
           onChange={(e) => setSelectedMeetingId(e.target.value)}
           disabled={loading}
-          style={{ maxWidth: 620 }}
+          style={{
+            flex: "1 1 620px",
+            maxWidth: 900,
+            minWidth: 280,
+            minHeight: 48,
+            height: 48,
+            padding: "12px 16px",
+            lineHeight: 1.4,
+          }}
         >
           <option value="">All meetings</option>
           {meetings.map((meeting) => (

@@ -235,7 +235,15 @@ export default function AnalyzeMeeting() {
             value={selectedMeetingId}
             onChange={(e) => handleMeetingSelect(e.target.value)}
             disabled={loading}
-            style={{ maxWidth: 520 }}
+            style={{
+              flex: "1 1 520px",
+              maxWidth: 900,
+              minWidth: 280,
+              minHeight: 48,
+              height: 48,
+              padding: "12px 16px",
+              lineHeight: 1.4,
+            }}
           >
             <option value="">Select a previous meeting</option>
             {meetings.map((meeting) => (

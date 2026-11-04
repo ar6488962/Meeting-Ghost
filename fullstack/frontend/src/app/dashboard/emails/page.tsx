@@ -117,13 +117,21 @@ export default function EmailHistory() {
           <span>Dispatched Logs Repository</span>
         </h3>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", width: "100%" }}>
           <select
             className="input"
             value={selectedMeetingId}
             onChange={(e) => setSelectedMeetingId(e.target.value)}
             disabled={loading}
-            style={{ minWidth: 240, height: 36, fontSize: "0.82rem" }}
+            style={{
+              flex: "1 1 420px",
+              minWidth: 280,
+              minHeight: 48,
+              height: 48,
+              padding: "12px 16px",
+              lineHeight: 1.4,
+              fontSize: "0.82rem",
+            }}
             aria-label="Filter email history by meeting"
           >
             <option value="">All meetings</option>
@@ -133,7 +141,7 @@ export default function EmailHistory() {
               </option>
             ))}
           </select>
-          <div style={{ position: "relative", minWidth: "280px" }}>
+          <div style={{ position: "relative", flex: "1 1 280px", minWidth: "280px" }}>
             <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input
               type="text"
@@ -141,7 +149,7 @@ export default function EmailHistory() {
               placeholder="Search by recipient or subject..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ paddingLeft: 36, height: 36, fontSize: "0.82rem" }}
+              style={{ paddingLeft: 36, minHeight: 48, height: 48, fontSize: "0.82rem" }}
             />
           </div>
           <button
