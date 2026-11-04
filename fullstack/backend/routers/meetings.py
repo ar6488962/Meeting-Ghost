@@ -121,7 +121,7 @@ def analyze_meeting(
             draft = models.EmailDraft(
                 user_id=current_user.id,
                 meeting_id=meeting.id,
-                recipient=email.get("recipient", ""),
+                recipient="",
                 subject=email.get("subject", ""),
                 body=email.get("body", ""),
             )

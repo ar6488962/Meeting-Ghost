@@ -143,7 +143,7 @@ export default function AnalyzeMeeting() {
 
       setResult(data);
       const initialEmails: { [key: number]: string } = {};
-      data.email_drafts.forEach((draft, idx) => { initialEmails[idx] = draft.recipient; });
+      data.email_drafts.forEach((_, idx) => { initialEmails[idx] = ""; });
       setEmailInputs(initialEmails);
       setSelectedMeetingId(String(data.id));
     } catch (err: unknown) {
@@ -164,7 +164,7 @@ export default function AnalyzeMeeting() {
       const data = await api.get<MeetingResult>(`/meetings/${meetingId}`);
       setResult(data);
       const initialEmails: { [key: number]: string } = {};
-      data.email_drafts.forEach((draft, idx) => { initialEmails[idx] = draft.recipient; });
+      data.email_drafts.forEach((_, idx) => { initialEmails[idx] = ""; });
       setEmailInputs(initialEmails);
       setEditedEmails({});
     } catch (err: unknown) {
@@ -175,7 +175,7 @@ export default function AnalyzeMeeting() {
   };
 
   const saveDraft = async (idx: number, draft: EmailDraft) => {
-    const recipient = emailInputs[idx] || draft.recipient;
+    const recipient = emailInputs[idx] || "";
     const body = editedEmails[idx] ?? draft.body;
     try {
       await api.patch(`/emails/drafts/${draft.id}`, {
