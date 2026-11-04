@@ -9,7 +9,27 @@ import os
 import urllib.request
 import urllib.error
 import json
+import smtplib
+from email.message import EmailMessage
 from typing import Tuple
+
+
+def _send_with_gmail(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
+    sender_email = os.getenv("GMAIL_ADDRESS") or os.getenv("SENDER_EMAIL")
+    app_password = os.getenv("GMAIL_APP_PASSWORD")
+    if not sender_email or not app_password:
+        return False, "Gmail fallback is not configured. Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD."
+
+    message = EmailMessage()
+    message["From"] = sender_email.strip()
+    message["To"] = to_address.strip()
+    message["Subject"] = subject
+    message.set_content(body)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
+        smtp.login(sender_email.strip(), app_password)
+        smtp.send_message(message)
+    return True, "Email sent successfully via Gmail."
 
 
 def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
@@ -29,14 +49,13 @@ def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
         # Use GMAIL_ADDRESS or SENDER_EMAIL as the sender since that is the email verified on Brevo
         sender_email = os.getenv("SENDER_EMAIL") or os.getenv("GMAIL_ADDRESS")
 
-        if not brevo_api_key:
-            return False, "❌ BREVO_API_KEY not configured in Render environment variables."
-
-        if not sender_email:
-            return False, "❌ SENDER_EMAIL/GMAIL_ADDRESS not configured. We need your registered Brevo email to send."
-
         if not to_address or "@" not in to_address:
             return False, "❌ Invalid recipient email address."
+
+        if not brevo_api_key:
+            return _send_with_gmail(to_address, subject, body)
+        if not sender_email:
+            return False, "❌ SENDER_EMAIL/GMAIL_ADDRESS not configured for Brevo."
 
         # Build Brevo API payload
         payload = json.dumps({
@@ -73,6 +92,14 @@ def send_email(to_address: str, subject: str, body: str) -> Tuple[bool, str]:
 
     except urllib.error.HTTPError as e:
         error_body = e.read().decode() if e.fp else str(e)
+        if e.code in (401, 403):
+            try:
+                return _send_with_gmail(to_address, subject, body)
+            except Exception as gmail_error:
+                return False, (
+                    f"Brevo rejected the API key ({e.code}) and Gmail fallback failed: "
+                    f"{gmail_error}"
+                )
         return False, f"❌ Brevo API error {e.code}: {error_body}"
 
     except Exception as e:
