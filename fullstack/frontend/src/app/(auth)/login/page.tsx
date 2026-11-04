@@ -65,8 +65,8 @@ export default function Login() {
       });
       setSession(data.access_token, data.user);
       router.replace("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Invalid email or password. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -200,6 +200,12 @@ export default function Login() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            <div style={{ textAlign: "right", marginTop: -8 }}>
+              <Link href="/forgot-password" className={styles.link} style={{ fontSize: "0.8rem" }}>
+                Forgot password?
+              </Link>
             </div>
 
             <button

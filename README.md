@@ -70,6 +70,8 @@ DATABASE_URL=postgresql://user:pass@host:port/dbname
 # Email settings
 BREVO_API_KEY=your_brevo_api_key_here
 SENDER_EMAIL=your_verified_brevo_sender_email@gmail.com
+FRONTEND_URL=http://localhost:3000
+PASSWORD_RESET_EXPIRE_MINUTES=60
 
 # Security
 SECRET_KEY=generate_a_random_jwt_secret_key_here
@@ -122,6 +124,7 @@ npm run dev
    * `GROQ_API_KEY` (Your Groq API key)
    * `BREVO_API_KEY` (Your Brevo transactional email API key)
    * `SENDER_EMAIL` (Your verified sender email address on Brevo)
+   * `FRONTEND_URL` (The public frontend URL used in password reset links)
    * `SECRET_KEY` (Any secure random string)
 
 ### 🌐 Frontend Setup (Vercel)

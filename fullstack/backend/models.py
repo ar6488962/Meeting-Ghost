@@ -26,6 +26,9 @@ class User(Base):
     meetings = relationship("Meeting", back_populates="owner", cascade="all, delete")
     action_items = relationship("ActionItem", back_populates="user", cascade="all, delete")
     email_logs = relationship("EmailLog", back_populates="user", cascade="all, delete")
+    password_reset_tokens = relationship(
+        "PasswordResetToken", back_populates="user", cascade="all, delete"
+    )
 
 
 class Meeting(Base):
@@ -101,3 +104,16 @@ class EmailDraft(Base):
 
     user = relationship("User")
     meeting = relationship("Meeting", back_populates="email_drafts")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    token_hash = Column(String(64), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="password_reset_tokens")
