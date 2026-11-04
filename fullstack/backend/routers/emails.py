@@ -125,15 +125,13 @@ def update_draft(
 
 @router.get("/history", response_model=List[schemas.EmailLogOut])
 def email_history(
+    meeting_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.get_current_user),
 ):
     """Get email send history for the current user (newest first)."""
-    logs = (
-        db.query(models.EmailLog)
-        .filter(models.EmailLog.user_id == current_user.id)
-        .order_by(models.EmailLog.sent_at.desc())
-        .limit(100)
-        .all()
-    )
+    query = db.query(models.EmailLog).filter(models.EmailLog.user_id == current_user.id)
+    if meeting_id is not None:
+        query = query.filter(models.EmailLog.meeting_id == meeting_id)
+    logs = query.order_by(models.EmailLog.sent_at.desc()).limit(100).all()
     return [schemas.EmailLogOut.model_validate(log) for log in logs]

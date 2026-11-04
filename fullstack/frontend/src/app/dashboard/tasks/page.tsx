@@ -28,6 +28,12 @@ interface ActionItem {
   is_overdue: boolean;
 }
 
+interface Meeting {
+  id: number;
+  title: string;
+  created_at: string;
+}
+
 export default function ActionItemsTracker() {
   const [items, setItems] = useState<ActionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,13 +43,18 @@ export default function ActionItemsTracker() {
   const [error, setError] = useState("");
   const [completingId, setCompletingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState("");
 
   const fetchItems = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     setError("");
     try {
-      const data = await api.get<ActionItem[]>("/action-items?status_filter=All");
+      const endpoint = selectedMeetingId
+        ? `/action-items?status_filter=All&meeting_id=${selectedMeetingId}`
+        : "/action-items?status_filter=All";
+      const data = await api.get<ActionItem[]>(endpoint);
       setItems(data);
     } catch (err: any) {
       setError(err.message || "Failed to fetch action items");
@@ -53,7 +64,11 @@ export default function ActionItemsTracker() {
     }
   };
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => {
+    api.get<Meeting[]>("/meetings").then(setMeetings).catch(() => undefined);
+  }, []);
+
+  useEffect(() => { fetchItems(); }, [selectedMeetingId]);
 
   const handleMarkComplete = async (id: number) => {
     setCompletingId(id);
@@ -102,11 +117,30 @@ export default function ActionItemsTracker() {
   });
 
   const completionPct = items.length > 0 ? Math.round((completedTasks.length / items.length) * 100) : 0;
+  const selectedMeeting = meetings.find((meeting) => String(meeting.id) === selectedMeetingId);
 
   return (
     <div className="animate-fadeInUp" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
       {/* Metrics Row */}
+      <div className="card" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <label htmlFor="action-meeting-filter" style={{ fontWeight: 700, fontSize: "0.85rem" }}>Meeting</label>
+        <select
+          id="action-meeting-filter"
+          className="input"
+          value={selectedMeetingId}
+          onChange={(e) => setSelectedMeetingId(e.target.value)}
+          disabled={loading}
+          style={{ maxWidth: 620 }}
+        >
+          <option value="">All meetings</option>
+          {meetings.map((meeting) => (
+            <option key={meeting.id} value={meeting.id}>{meeting.title}</option>
+          ))}
+        </select>
+        {selectedMeeting && <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>Showing this meeting only</span>}
+      </div>
+
       <section className="grid-3">
         {[
           {

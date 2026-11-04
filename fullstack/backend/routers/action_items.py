@@ -34,6 +34,7 @@ def _is_overdue(deadline: str) -> bool:
 @router.get("", response_model=List[schemas.ActionItemOut])
 def get_action_items(
     status_filter: str = "Pending",
+    meeting_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth_utils.get_current_user),
 ):
@@ -43,6 +44,8 @@ def get_action_items(
     )
     if status_filter != "All":
         query = query.filter(models.ActionItem.status == status_filter)
+    if meeting_id is not None:
+        query = query.filter(models.ActionItem.meeting_id == meeting_id)
 
     items = query.order_by(models.ActionItem.created_at.desc()).all()
 

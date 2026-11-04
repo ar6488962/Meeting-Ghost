@@ -28,6 +28,12 @@ interface EmailLog {
   meeting_id: number | null;
 }
 
+interface Meeting {
+  id: number;
+  title: string;
+  created_at: string;
+}
+
 export default function EmailHistory() {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
@@ -35,13 +41,16 @@ export default function EmailHistory() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState("");
 
   const fetchLogs = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     setError("");
     try {
-      const data = await api.get<EmailLog[]>("/emails/history");
+      const endpoint = selectedMeetingId ? `/emails/history?meeting_id=${selectedMeetingId}` : "/emails/history";
+      const data = await api.get<EmailLog[]>(endpoint);
       setLogs(data);
     } catch (err: any) {
       setError(err.message || "Failed to load email history");
@@ -51,7 +60,11 @@ export default function EmailHistory() {
     }
   };
 
-  useEffect(() => { fetchLogs(); }, []);
+  useEffect(() => {
+    api.get<Meeting[]>("/meetings").then(setMeetings).catch(() => undefined);
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [selectedMeetingId]);
 
   const filteredLogs = logs.filter(log => 
     log.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,6 +118,19 @@ export default function EmailHistory() {
         </h3>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select
+            className="input"
+            value={selectedMeetingId}
+            onChange={(e) => setSelectedMeetingId(e.target.value)}
+            disabled={loading}
+            style={{ minWidth: 240, height: 36, fontSize: "0.82rem" }}
+            aria-label="Filter email history by meeting"
+          >
+            <option value="">All meetings</option>
+            {meetings.map((meeting) => (
+              <option key={meeting.id} value={meeting.id}>{meeting.title}</option>
+            ))}
+          </select>
           <div style={{ position: "relative", minWidth: "280px" }}>
             <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
             <input
