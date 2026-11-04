@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { formatFullDateTime } from "@/lib/datetime";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -64,7 +65,7 @@ export default function MeetingDetailView({ params }: { params: Promise<{ id: st
     if (!meeting) return;
     const md = `
 # Meeting: ${meeting.title}
-Date: ${new Date(meeting.created_at).toLocaleString()}
+Date: ${formatFullDateTime(meeting.created_at)}
 
 ## Summary
 ${meeting.summary}
@@ -113,7 +114,7 @@ ${meeting.action_items.map(item => `- [ ] **${item.owner_name}**: ${item.task} (
         <div>
           <span style={{ fontSize: "0.72rem", color: "var(--accent-primary)", display: "flex", alignItems: "center", gap: 6, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             <Calendar size={13} />
-            <span>Analyzed on {new Date(meeting.created_at).toLocaleString()}</span>
+            <span>Analyzed on {formatFullDateTime(meeting.created_at)}</span>
           </span>
           <h2 style={{ fontSize: "1.35rem", fontWeight: 900, letterSpacing: "-0.015em", color: "var(--text-primary)" }}>{meeting.title}</h2>
         </div>

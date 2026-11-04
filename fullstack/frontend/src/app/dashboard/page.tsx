@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { formatShortDate } from "@/lib/datetime";
 import {
   FileText,
   CheckCircle2,
@@ -333,7 +334,7 @@ export default function DashboardOverview() {
                     </h4>
                     <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                       <Clock size={11} />
-                      {new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                      {formatShortDate(m.created_at)}
                     </span>
                   </div>
                   <p

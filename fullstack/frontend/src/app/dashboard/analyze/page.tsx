@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatFullDateTime } from "@/lib/datetime";
 import {
   FileText,
   CheckCircle,
@@ -239,7 +240,7 @@ export default function AnalyzeMeeting() {
             <option value="">Select a previous meeting</option>
             {meetings.map((meeting) => (
               <option key={meeting.id} value={meeting.id}>
-                {meeting.title} — {new Date(meeting.created_at).toLocaleString()}
+                {meeting.title} — {formatFullDateTime(meeting.created_at)}
               </option>
             ))}
           </select>

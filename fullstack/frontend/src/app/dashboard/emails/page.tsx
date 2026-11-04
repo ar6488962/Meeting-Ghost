@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatFullDateTime } from "@/lib/datetime";
 import { 
   Mail, 
   Check, 
@@ -174,12 +175,7 @@ export default function EmailHistory() {
                     <td style={{ padding: "14px 20px", color: "var(--text-secondary)" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem" }}>
                         <Clock size={12} color="var(--accent-primary)" />
-                        {new Date(log.sent_at).toLocaleString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatFullDateTime(log.sent_at)}
                       </span>
                     </td>
                     <td style={{ padding: "14px 20px" }}>
@@ -234,7 +230,7 @@ export default function EmailHistory() {
               <div className="grid-2">
                 <div>
                   <span className="label">Date & Time</span>
-                  <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{new Date(selectedLog.sent_at).toLocaleString()}</div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{formatFullDateTime(selectedLog.sent_at)}</div>
                 </div>
 
                 <div>
