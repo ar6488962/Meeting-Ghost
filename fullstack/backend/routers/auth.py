@@ -5,7 +5,7 @@ import os
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from agents.email_sender import send_email
@@ -71,7 +71,11 @@ def login(payload: schemas.UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password")
-def forgot_password(payload: schemas.PasswordResetRequest, db: Session = Depends(get_db)):
+def forgot_password(
+    payload: schemas.PasswordResetRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     """Send a password reset link when the email belongs to an active account."""
     generic_message = (
         "If an account exists for that email, a password reset link has been sent."
@@ -93,7 +97,11 @@ def forgot_password(payload: schemas.PasswordResetRequest, db: Session = Depends
     db.add(reset_token)
     db.commit()
 
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    frontend_url = (
+        request.headers.get("origin")
+        or os.getenv("FRONTEND_URL")
+        or "http://localhost:3000"
+    ).rstrip("/")
     reset_link = f"{frontend_url}/reset-password?token={raw_token}"
     sender = _reset_email_sender()
     if not sender:
