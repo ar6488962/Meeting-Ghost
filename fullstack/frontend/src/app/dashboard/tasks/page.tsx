@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatFullDateTime } from "@/lib/datetime";
 import {
   CheckCircle2,
   Clock,
@@ -135,7 +136,9 @@ export default function ActionItemsTracker() {
         >
           <option value="">All meetings</option>
           {meetings.map((meeting) => (
-            <option key={meeting.id} value={meeting.id}>{meeting.title}</option>
+            <option key={meeting.id} value={meeting.id}>
+              {meeting.title} — {formatFullDateTime(meeting.created_at)}
+            </option>
           ))}
         </select>
         {selectedMeeting && <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>Showing this meeting only</span>}

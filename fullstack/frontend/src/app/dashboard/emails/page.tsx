@@ -128,7 +128,9 @@ export default function EmailHistory() {
           >
             <option value="">All meetings</option>
             {meetings.map((meeting) => (
-              <option key={meeting.id} value={meeting.id}>{meeting.title}</option>
+              <option key={meeting.id} value={meeting.id}>
+                {meeting.title} — {formatFullDateTime(meeting.created_at)}
+              </option>
             ))}
           </select>
           <div style={{ position: "relative", minWidth: "280px" }}>
