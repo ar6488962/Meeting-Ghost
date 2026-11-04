@@ -5,6 +5,7 @@ Creates professional emails for each person with their assigned action items.
 """
 
 import os
+import re
 from typing import List, Dict
 
 from dotenv import load_dotenv
@@ -159,7 +160,8 @@ def _parse_email_response(response_text: str, owner: str) -> Dict:
             subject = lines[0].strip()
             body = "\n".join(lines[1:]).strip()
 
-    subject = subject.strip().strip("*").strip()
+    subject = re.sub(r"^[\s*_`]+|[\s*_`]+$", "", subject).strip()
+    subject = re.sub(r"^(?:SUBJECT\s*:\s*)+", "", subject, flags=re.IGNORECASE).strip()
     body = body.strip()
 
     if not subject:
