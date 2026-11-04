@@ -45,6 +45,7 @@ class Meeting(Base):
     owner = relationship("User", back_populates="meetings")
     action_items = relationship("ActionItem", back_populates="meeting", cascade="all, delete")
     email_logs = relationship("EmailLog", back_populates="meeting", cascade="all, delete")
+    email_drafts = relationship("EmailDraft", back_populates="meeting", cascade="all, delete")
 
 
 class ActionItem(Base):
@@ -81,3 +82,22 @@ class EmailLog(Base):
     # Relationships
     user = relationship("User", back_populates="email_logs")
     meeting = relationship("Meeting", back_populates="email_logs")
+
+
+class EmailDraft(Base):
+    __tablename__ = "email_drafts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    meeting_id = Column(Integer, ForeignKey("meetings.id"), nullable=False)
+    recipient = Column(String(255), nullable=False, default="")
+    subject = Column(String(500), nullable=False)
+    body = Column(Text, nullable=False)
+    status = Column(String(50), default="Draft")  # Draft / Sent
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    sent_at = Column(DateTime, nullable=True)
+
+    user = relationship("User")
+    meeting = relationship("Meeting", back_populates="email_drafts")

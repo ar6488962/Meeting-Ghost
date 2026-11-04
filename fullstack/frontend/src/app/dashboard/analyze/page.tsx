@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import {
   FileText,
@@ -11,12 +11,10 @@ import {
   Send,
   UploadCloud,
   FileEdit,
-  Play,
   RotateCcw,
   Sparkles,
   AlertCircle,
   Zap,
-  ChevronRight,
   Copy,
   Check,
 } from "lucide-react";
@@ -30,9 +28,13 @@ interface ActionItem {
 }
 
 interface EmailDraft {
+  id: number;
   recipient: string;
   subject: string;
   body: string;
+  status: string;
+  error_message?: string | null;
+  meeting_id: number;
 }
 
 interface MeetingResult {
@@ -44,6 +46,13 @@ interface MeetingResult {
   risks: string[];
   action_items: ActionItem[];
   email_drafts: EmailDraft[];
+  created_at?: string;
+}
+
+interface MeetingListItem {
+  id: number;
+  title: string;
+  created_at: string;
 }
 
 const PROGRESS_STEPS = [
@@ -53,6 +62,12 @@ const PROGRESS_STEPS = [
   { label: "Generating personalized follow-up emails...", icon: "✉️" },
   { label: "Saving to workspace database...", icon: "💾" },
 ];
+
+type TabId = "summary" | "decisions" | "actions" | "issues" | "emails";
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export default function AnalyzeMeeting() {
   const [inputType, setInputType] = useState<"text" | "audio">("text");
@@ -64,7 +79,7 @@ export default function AnalyzeMeeting() {
   const [progressStep, setProgressStep] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<MeetingResult | null>(null);
-  const [activeTab, setActiveTab] = useState<"summary" | "decisions" | "actions" | "issues" | "emails">("summary");
+  const [activeTab, setActiveTab] = useState<TabId>("summary");
 
   const [emailInputs, setEmailInputs] = useState<{ [key: number]: string }>({});
   const [editedEmails, setEditedEmails] = useState<{ [key: number]: string }>({});
@@ -72,6 +87,14 @@ export default function AnalyzeMeeting() {
   const [emailSuccess, setEmailSuccess] = useState<{ [key: number]: string }>({});
   const [emailError, setEmailError] = useState<{ [key: number]: string }>({});
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [meetings, setMeetings] = useState<MeetingListItem[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState("");
+
+  useEffect(() => {
+    api.get<MeetingListItem[]>("/meetings").then(setMeetings).catch(() => {
+      // The analyze screen still works when the meeting archive cannot be loaded.
+    });
+  }, []);
 
   const handleFileChange = (file: File) => {
     setAudioFile(file);
@@ -119,14 +142,48 @@ export default function AnalyzeMeeting() {
 
       setResult(data);
       const initialEmails: { [key: number]: string } = {};
-      data.email_drafts.forEach((_, idx) => { initialEmails[idx] = ""; });
+      data.email_drafts.forEach((draft, idx) => { initialEmails[idx] = draft.recipient; });
       setEmailInputs(initialEmails);
-    } catch (err: any) {
-      setError(err.message || "Analysis pipeline failed. Please try again.");
+      setSelectedMeetingId(String(data.id));
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Analysis pipeline failed. Please try again."));
     } finally {
       stopProgress();
       setLoading(false);
       setProgressStep(0);
+    }
+  };
+
+  const handleMeetingSelect = async (meetingId: string) => {
+    setSelectedMeetingId(meetingId);
+    if (!meetingId) return;
+    setLoading(true);
+    setError("");
+    try {
+      const data = await api.get<MeetingResult>(`/meetings/${meetingId}`);
+      setResult(data);
+      const initialEmails: { [key: number]: string } = {};
+      data.email_drafts.forEach((draft, idx) => { initialEmails[idx] = draft.recipient; });
+      setEmailInputs(initialEmails);
+      setEditedEmails({});
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to load the selected meeting"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveDraft = async (idx: number, draft: EmailDraft) => {
+    const recipient = emailInputs[idx] || draft.recipient;
+    const body = editedEmails[idx] ?? draft.body;
+    try {
+      await api.patch(`/emails/drafts/${draft.id}`, {
+        recipient,
+        subject: draft.subject,
+        body,
+      });
+    } catch (err: unknown) {
+      setEmailError((prev) => ({ ...prev, [idx]: getErrorMessage(err, "Failed to save draft") }));
     }
   };
 
@@ -146,11 +203,13 @@ export default function AnalyzeMeeting() {
         subject: draft.subject,
         body: bodyToSend,
         meeting_id: result?.id,
+        draft_id: draft.id,
       });
       setEmailSuccess((prev) => ({ ...prev, [idx]: `Email dispatched to ${recipient}` }));
       setEmailInputs((prev) => ({ ...prev, [idx]: "" }));
-    } catch (err: any) {
-      setEmailError((prev) => ({ ...prev, [idx]: err.message || "Failed to send email" }));
+      setEditedEmails((prev) => ({ ...prev, [idx]: bodyToSend }));
+    } catch (err: unknown) {
+      setEmailError((prev) => ({ ...prev, [idx]: getErrorMessage(err, "Failed to send email") }));
     } finally {
       setSendingEmails((prev) => ({ ...prev, [idx]: false }));
     }
@@ -166,6 +225,26 @@ export default function AnalyzeMeeting() {
     <div className="animate-fadeInUp" style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
       {/* Input Panel */}
+      {meetings.length > 0 && (
+        <div className="card" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <label htmlFor="meeting-archive" style={{ fontWeight: 700, fontSize: "0.85rem" }}>Meeting archive</label>
+          <select
+            id="meeting-archive"
+            className="input"
+            value={selectedMeetingId}
+            onChange={(e) => handleMeetingSelect(e.target.value)}
+            disabled={loading}
+            style={{ maxWidth: 520 }}
+          >
+            <option value="">Select a previous meeting</option>
+            {meetings.map((meeting) => (
+              <option key={meeting.id} value={meeting.id}>
+                {meeting.title} — {new Date(meeting.created_at).toLocaleString()}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {!result && (
         <div className="card" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Header */}
@@ -436,7 +515,7 @@ export default function AnalyzeMeeting() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as TabId)}
                   className={`tab ${activeTab === tab.id ? "active" : ""}`}
                   style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
                 >
@@ -648,6 +727,7 @@ export default function AnalyzeMeeting() {
                         <textarea
                           value={editedEmails[idx] ?? draft.body}
                           onChange={(e) => setEditedEmails(prev => ({ ...prev, [idx]: e.target.value }))}
+                          onBlur={() => saveDraft(idx, draft)}
                           style={{
                             padding: "16px 18px",
                             background: "rgba(0,0,0,0.25)",
@@ -676,6 +756,7 @@ export default function AnalyzeMeeting() {
                               placeholder="Recipient email address (e.g. james@company.com)"
                               value={emailInputs[idx] || ""}
                               onChange={(e) => setEmailInputs((prev) => ({ ...prev, [idx]: e.target.value }))}
+                              onBlur={() => saveDraft(idx, draft)}
                               disabled={sendingEmails[idx]}
                             />
                             <button

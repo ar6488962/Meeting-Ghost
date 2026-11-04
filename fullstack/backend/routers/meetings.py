@@ -56,6 +56,10 @@ def _build_action_item_out(item: models.ActionItem) -> schemas.ActionItemOut:
     )
 
 
+def _build_email_draft_out(draft: models.EmailDraft) -> schemas.EmailDraftOut:
+    return schemas.EmailDraftOut.model_validate(draft)
+
+
 @router.post("/analyze", response_model=schemas.MeetingOut, status_code=201)
 def analyze_meeting(
     payload: schemas.MeetingAnalyzeRequest,
@@ -112,14 +116,20 @@ def analyze_meeting(
 
         # Step 4: Generate follow-up email drafts
         email_drafts = generate_follow_up_emails(action_items_data)
-        email_draft_schemas = [
-            schemas.EmailDraftOut(
-                recipient=e.get("recipient", ""),
-                subject=e.get("subject", ""),
-                body=e.get("body", ""),
+        saved_drafts = []
+        for email in email_drafts:
+            draft = models.EmailDraft(
+                user_id=current_user.id,
+                meeting_id=meeting.id,
+                recipient=email.get("recipient", ""),
+                subject=email.get("subject", ""),
+                body=email.get("body", ""),
             )
-            for e in email_drafts
-        ]
+            db.add(draft)
+            saved_drafts.append(draft)
+        db.commit()
+        for draft in saved_drafts:
+            db.refresh(draft)
 
         return schemas.MeetingOut(
             id=meeting.id,
@@ -129,7 +139,7 @@ def analyze_meeting(
             unresolved_issues=meeting.unresolved_issues or [],
             risks=meeting.risks or [],
             action_items=[_build_action_item_out(i) for i in saved_items],
-            email_drafts=email_draft_schemas,
+            email_drafts=[_build_email_draft_out(draft) for draft in saved_drafts],
             created_at=meeting.created_at,
         )
 
@@ -221,6 +231,10 @@ def get_meeting(
         unresolved_issues=meeting.unresolved_issues or [],
         risks=meeting.risks or [],
         action_items=[_build_action_item_out(i) for i in meeting.action_items],
-        email_drafts=[],  # Not stored, regenerated on demand
+        email_drafts=[
+            _build_email_draft_out(draft)
+            for draft in meeting.email_drafts
+            if draft.status != "Sent"
+        ],
         created_at=meeting.created_at,
     )

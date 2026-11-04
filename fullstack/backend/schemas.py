@@ -83,9 +83,15 @@ class MeetingAnalyzeRequest(BaseModel):
 
 
 class EmailDraftOut(BaseModel):
+    id: int
     recipient: str
     subject: str
     body: str
+    status: str
+    error_message: Optional[str] = None
+    meeting_id: int
+
+    model_config = {"from_attributes": True}
 
 
 class MeetingOut(BaseModel):
@@ -125,6 +131,7 @@ class EmailSendRequest(BaseModel):
     subject: str
     body: str
     meeting_id: Optional[int] = None
+    draft_id: Optional[int] = None
 
     @field_validator("recipient")
     @classmethod
@@ -146,6 +153,19 @@ class EmailLogOut(BaseModel):
     meeting_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
+
+
+class EmailDraftUpdate(BaseModel):
+    recipient: str
+    subject: str
+    body: str
+
+    @field_validator("subject", "body")
+    @classmethod
+    def content_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Email subject and body cannot be empty")
+        return v
 
 
 # ─── Dashboard Stats Schema ────────────────────────────────────────────────────
@@ -181,4 +201,3 @@ class UserPasswordChange(BaseModel):
         if len(v) < 6:
             raise ValueError("New password must be at least 6 characters")
         return v
-
